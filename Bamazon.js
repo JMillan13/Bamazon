@@ -47,14 +47,14 @@ var purchaseItem = function () {
   }])
   .then(function (answer) {
     // Query the DB for info on item and quantity
-    connection.query("Select product_name, department_name, price, stock_quantity from products where?", { item_id: answer.id }
+    connection.query("Select product_name, department_name, price, stock_quantity from products where item_id = ?", [ answer.id ]
       , function (err, res) {
           if (err) throw err;
 
-          if (res[0].StockQuantity >= answer.quantity) {
+          if (res[0].stock_quantity >= answer.quantity) {
             //If enough inventory to complete order, process order by updating database inventory and notifying customer that order is complete.
-            var itemQuantity = res[0].StockQuantity - answer.quantity;
-
+            var itemQuantity = res[0].stock_quantity - answer.quantity;
+            var itemPrice = res[0].price;
             connection.query("UPDATE products SET ? WHERE ?",
               [
                 { stock_quantity: itemQuantity},
@@ -62,7 +62,9 @@ var purchaseItem = function () {
               ],
               function(err, res) {
                 //notify user after db is updated
-                var cost = res[0].Price * answer.quantity;
+                if (err) throw err;
+                console.log(res);
+                var cost = itemPrice * answer.quantity;
                 console.log('\n  Order fulfilled! Your cost is $' + cost.toFixed(2) + '\n');
                 // Order completed
                 customerPrompt();
@@ -90,7 +92,7 @@ var customerPrompt = function () {
   .then(function (answer) {
     switch (answer.action) {
       case 'Yes':
-        displayForUser();
+        displayForCustomer();
         break;
       case 'No':
         connection.end();
